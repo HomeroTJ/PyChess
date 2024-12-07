@@ -4,24 +4,63 @@ class Square():
     pass
 
 class Pieces:
+    """This is the parent class of all the pieces, all pieces
+    have minimum these two methods"""
     def __init__(self, position: str, color: bool) -> None:
-        self.position = position
-        self.color = color
+        self.position = position #Contains the square where is the piece
+        self.color = color #True if the color is white, False if the color is black
 
-    def move(self):
+    def get_rep(self):
+        """Returns the representation of the piece to build later the FEN strin"""
+        ...
+
+    def can_move(self, other_pieces):
+        """Returns a list of all the posible moves of a piece"""
         ...
 
 class Pawn(Pieces):
 
-    def get_rep(self):
+    def get_rep(self) -> str:
         representation = "p"
         if self.color:
             return representation.upper()
         else:
             return representation.lower()
         
-    def canMove(self, other_pieces: list):
+    def can_attack(self, other_pieces: list) -> list:
+        """This function returns the squares of a piece that a pawn can eat"""
+
+        # MUST IMPLEMENT ENPASSANT
+
+        #Depending on the color of the piece, we give a different value to the iteration value
+        #this is because we use a global coordinate sistem for the squares
+
+        if self.color == True:
+            move_iter = 1
+        if self.color == False:
+            move_iter = -1
+
+        #we store the column and the row (in an integer variable) where is the pawn
+        column = ord(self.position[0])
+        row = int(self.position[1])
+
+        possible_attacks = []
+        
+        #This loop iterates over all the pieces on the board and checks if they are in a square where
+        #a pawn can take a piece, then, return all the squares on a list
+        for piece in other_pieces:
+            if (piece.position == chr(column-1)+str(row+move_iter)) and (piece.color != self.color):
+                possible_attacks.append(chr(column-1)+str(row+move_iter))
+            elif (piece.position == chr(column+1)+str(row+move_iter)) and (piece.color != self.color):
+                possible_attacks.append(chr(column+1)+str(row+move_iter))
+
+        return possible_attacks
+        
+    def can_move(self, other_pieces: list) -> list:
         """Returns a list of the posible squares that a piece can move"""
+
+        #Depending on the color of the piece, we give a different value to the iteration value
+        #this is because we use a global coordinate sistem for the squares
         if self.color == True:
             move_iter = 1
         if self.color == False:
@@ -29,82 +68,345 @@ class Pawn(Pieces):
 
         possibles_moves = []
         
+        #We storage the column an the row of the pawn in an integer variable
         column = ord(self.position[0])
         row = int(self.position[1])
 
-        if row == 2 and self.color==True:
-            possibles_moves.append(chr(column)+str(row+move_iter))
-            possibles_moves.append(chr(column)+str(row+2*move_iter))
+        #Here passes different conditions to make the different cases where a pawn can be
+        # 
+        # Must implement queening
+        #
+
+        if (row == 2) and (self.color==True):
+            piece_on_square = [other.position for other in other_pieces if (other.position ==chr(column)+str(row+move_iter)) or (other.position ==chr(column)+str(2*row+move_iter))]
+            if not(chr(column)+str(row+move_iter) in piece_on_square):
+                possibles_moves.append(chr(column)+str(row+move_iter))
+            if not(chr(column)+str(row+2*move_iter) in piece_on_square):
+                possibles_moves.append(chr(column)+str(row+2*move_iter))
         
         if row == 7 and self.color==False:
-            possibles_moves.append(chr(column)+str(row+move_iter))
-            possibles_moves.append(chr(column)+str(row+2*move_iter))
+            piece_on_square = [other.position for other in other_pieces if (other.position ==chr(column)+str(row+move_iter)) or (other.position ==chr(column)+str(2*row+move_iter))]
+            if not(chr(column)+str(row+move_iter) in piece_on_square):
+                possibles_moves.append(chr(column)+str(row+move_iter))
+            if not(chr(column)+str(row+2*move_iter) in piece_on_square):
+                possibles_moves.append(chr(column)+str(row+2*move_iter))
         
         if self.color == False and row != 7:
-            possibles_moves.append(chr(column)+str(row+move_iter))
+            piece_on_square = [other.position for other in other_pieces if (other.position ==chr(column)+str(row+move_iter))]
+            if not(chr(column)+str(row+move_iter) in piece_on_square):
+                possibles_moves.append(chr(column)+str(row+move_iter))
 
         if self.color == True and row != 2:
-            possibles_moves.append(chr(column)+str(row+move_iter))
+            piece_on_square = [other.position for other in other_pieces if (other.position ==chr(column)+str(row+move_iter))]
+            if (chr(column)+str(row+move_iter) in piece_on_square):
+                pass
+            else:
+                possibles_moves.append(chr(column)+str(row+move_iter))
+            
 
         possible_attacks = []
         possible_attacks.append(chr(column-1)+str(row+move_iter))
         possible_attacks.append(chr(column+1)+str(row+move_iter))
 
         for piece in other_pieces:
-            if piece.position in possible_attacks:
+            if (piece.position in possible_attacks) and piece.color != self.color:
                 possibles_moves.append(piece.position)
-        
+
         return possibles_moves
 
             
 
 class Bishop(Pieces):
-    def get_rep(self):
+    def get_rep(self) -> str:
         representation = "b"
         if self.color:
             return representation.upper()
         else:
             return representation.lower()
+        
+    def can_move(self, other_pieces):
+        posible_moves = []
 
+        column = ord(self.position[0])
+        row = int(self.position[1])        
+
+        iter_col = [-1,1]
+        iter_row = [-1,1]
+
+
+        for change_col in iter_col:
+            for change_row in iter_row:
+                itering_col = column
+                itering_row = row
+
+                while True:
+                    itering_col += change_col
+                    itering_row += change_row
+
+                    if ((itering_col > ord("h")) or (itering_col < ord("a"))) or ((itering_row > 8) or (itering_row < 1)):
+                        break
+
+                    piece_on_square = [piece for piece in other_pieces if piece.position == chr(itering_col)+str(itering_row)]
+
+                    if len(piece_on_square) == 0:
+                        posible_moves.append(chr(itering_col)+str(itering_row))
+                    else:
+                        for piece in piece_on_square:
+                            if piece.color != self.color:
+                                posible_moves.append(chr(itering_col)+str(itering_row))
+                                break
+                        break
+
+        return posible_moves
 class Rook(Pieces):
-    def get_rep(self):
+    def get_rep(self) -> str:
         representation = "r"
         if self.color:
             return representation.upper()
         else:
             return representation.lower()
+        
+    def can_move(self, other_pieces):
+        posible_moves = []
+
+        iter_col = [-1,1]
+        iter_row = [-1,1]
+
+        column = ord(self.position[0])
+        row = int(self.position[1]) 
+
+        for change_col in iter_col:
+                itering_col = column
+                itering_row = row
+
+                while True:
+                    itering_col += change_col
+
+                    if ((itering_col > ord("h")) or (itering_col < ord("a"))):
+                        break
+
+                    piece_on_square = [piece for piece in other_pieces if piece.position == chr(itering_col)+str(itering_row)]
+
+                    if len(piece_on_square) == 0:
+                        posible_moves.append(chr(itering_col)+str(itering_row))
+                    else:
+                        for piece in piece_on_square:
+                            if piece.color != self.color:
+                                posible_moves.append(chr(itering_col)+str(itering_row))
+                                break
+                        break
+                        
+        for change_row in iter_row:
+                itering_col = column
+                itering_row = row
+
+                while True:
+                    itering_row += change_row
+
+                    if ((itering_row > 8) or (itering_row < 1)):
+                        break
+
+                    piece_on_square = [piece for piece in other_pieces if piece.position == chr(itering_col)+str(itering_row)]
+
+                    if len(piece_on_square) == 0:
+                        posible_moves.append(chr(itering_col)+str(itering_row))
+                    else:
+                        for piece in piece_on_square:
+                            if piece.color != self.color:
+                                posible_moves.append(chr(itering_col)+str(itering_row))
+                                break
+                        break
+
+        return posible_moves
 
 class Knight(Pieces):
-    def get_rep(self):
+    def get_rep(self) -> str:
         representation = "n"
         if self.color:
             return representation.upper()
         else:
             return representation.lower()
+        
+    def can_move(self, other_pieces):
+        posible_moves = []
+
+        column = ord(self.position[0])
+        row = int(self.position[1]) 
+
+        change_on_coord = [
+            (1,2), (1,-2),
+            (2,1), (2,-1),
+            (-1,2),(-1,-2),
+            (-2,1),(-2,-2),
+        ]
+
+        for tuple in change_on_coord:
+            itering_col = column + tuple[0]
+            itering_row = row + tuple[1]
+
+            if not(((itering_col > ord("h")) or (itering_col < ord("a"))) or ((itering_row > 8) or (itering_row < 1))):
+                piece_on_square = [piece for piece in other_pieces if piece.position == chr(itering_col)+str(itering_row)]
+
+                if len(piece_on_square) == 0:
+                    posible_moves.append(chr(itering_col)+str(itering_row))
+                else:
+                    for piece in piece_on_square:
+                        if piece.color != self.color:
+                            posible_moves.append(chr(itering_col)+str(itering_row))
+                            
+        return posible_moves
 
 class Queen(Pieces):
-    def get_rep(self):
+    def get_rep(self) -> str:
         representation = "q"
         if self.color:
             return representation.upper()
         else:
             return representation.lower()
+    
+    def can_move(self, other_pieces):
+        posible_moves = []
+
+        iter_col = [-1,1]
+        iter_row = [-1,1]
+
+        column = ord(self.position[0])
+        row = int(self.position[1]) 
+
+        for change_col in iter_col:
+                itering_col = column
+                itering_row = row
+
+                while True:
+                    itering_col += change_col
+
+                    if ((itering_col > ord("h")) or (itering_col < ord("a"))):
+                        break
+
+                    piece_on_square = [piece for piece in other_pieces if piece.position == chr(itering_col)+str(itering_row)]
+
+                    if len(piece_on_square) == 0:
+                        posible_moves.append(chr(itering_col)+str(itering_row))
+                    else:
+                        for piece in piece_on_square:
+                            if piece.color != self.color:
+                                posible_moves.append(chr(itering_col)+str(itering_row))
+                                break
+                        break
+                        
+        for change_row in iter_row:
+                itering_col = column
+                itering_row = row
+
+                while True:
+                    itering_row += change_row
+
+                    if ((itering_row > 8) or (itering_row < 1)):
+                        break
+
+                    piece_on_square = [piece for piece in other_pieces if piece.position == chr(itering_col)+str(itering_row)]
+
+                    if len(piece_on_square) == 0:
+                        posible_moves.append(chr(itering_col)+str(itering_row))
+                    else:
+                        for piece in piece_on_square:
+                            if piece.color != self.color:
+                                posible_moves.append(chr(itering_col)+str(itering_row))
+                                break
+                        break
+
+        column = ord(self.position[0])
+        row = int(self.position[1])        
+
+        iter_col = [-1,1]
+        iter_row = [-1,1]
+
+        for change_col in iter_col:
+            for change_row in iter_row:
+                itering_col = column
+                itering_row = row
+
+                while True:
+                    itering_col += change_col
+                    itering_row += change_row
+
+                    if ((itering_col > ord("h")) or (itering_col < ord("a"))) or ((itering_row > 8) or (itering_row < 1)):
+                        break
+
+                    piece_on_square = [piece for piece in other_pieces if piece.position == chr(itering_col)+str(itering_row)]
+
+                    if len(piece_on_square) == 0:
+                        posible_moves.append(chr(itering_col)+str(itering_row))
+                    else:
+                        for piece in piece_on_square:
+                            if piece.color != self.color:
+                                posible_moves.append(chr(itering_col)+str(itering_row))
+                                break
+                        break
+
+        return posible_moves
 
 class King(Pieces):
-    def get_rep(self):
+    def get_rep(self) -> str:
         representation = "K"
         if self.color:
             return representation.upper()
         else:
             return representation.lower()
         
+    def can_move(self, other_pieces):
+        posible_moves = []
+
+        column = ord(self.position[0])
+        row = int(self.position[1]) 
+
+        change_in_col = [0,1,-1]
+        change_in_row = [0,1,-1]
+
+        for change_x in change_in_row:
+            for change_y in change_in_col:
+            
+                itering_col = column + change_y
+                itering_row = row + change_x
+
+                if (change_in_col == 0) and (change_in_row == 0):
+                    pass
+
+                else:
+                    if not(((itering_col > ord("h")) or (itering_col < ord("a"))) or ((itering_row > 8) or (itering_row < 1))):
+                        piece_on_square = [piece for piece in other_pieces if piece.position == chr(itering_col)+str(itering_row)]
+
+                        if len(piece_on_square) == 0:
+                            posible_moves.append(chr(itering_col)+str(itering_row))
+                        else:
+                            for piece in piece_on_square:
+                                if piece.color != self.color:
+                                    posible_moves.append(chr(itering_col)+str(itering_row))
+
+        return posible_moves
+    
+    
+
+    
+
+    
+    def is_checked(self, other_pieces: list):
+        enemy_pieces = [pieces for pieces in other_pieces if (pieces.color != self.color)]
+
+        for enemy in enemy_pieces:
+            check = enemy.can_move(other_pieces)
+            if self.position in check:
+                return True
+            
+        return False
+
 class Chessboard():
     """Chesboard class"""
     std_initial_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" 
     def __init__(
             self, 
             fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR",
-            turn = "b",
+            turn = "w",
             castle = "QKqk",
             enpassantTargets = "-",
             halfMoveCounter = 0,
@@ -173,16 +475,7 @@ class Chessboard():
                 row += iter_r
 
         self.pieces = whitePieces + blackPieces
-
-    def read_move(self, move: str):
         
-        if move[0].islower():
-            for piece in self.pieces:
-                if isinstance(piece,Pawn):
-                    if move in piece.canMove():
-                        print("si", piece.position)
-        
-
     def print_board(self) -> None:
         """Prints the current position on terminal"""
         def print_row(num: int, color=int) -> None:
@@ -255,6 +548,7 @@ class Chessboard():
         """Takes as input a chess move in algebraic notation an updates the fenstring to make it"""
         ### Here obtains the target square to move a piece
         square_to_move = ""
+        flag = 0
         map_pieces = {
             "p": Pawn,
             "P": Pawn,
@@ -271,7 +565,16 @@ class Chessboard():
             "K": King,
         }
 
+        map_turn = {
+            "w": True,
+            "b": False
+        }
 
+        map_iteration = {
+            True: 1,
+            False: 2
+        }
+        
         for i in range(0,len(move)):
             if move[::-1][i].isnumeric():
                 square_to_move += move[::-1][i]
@@ -283,14 +586,171 @@ class Chessboard():
 
         if move[0].islower():
             actual_piece = Pawn
+        elif move == "O-O":
+            map_castle = {
+                True: "K",
+                False: "k"
+            }
+            map_position = {
+                True: ("e1","h1"),
+                False: ("e8","h8")
+            }
+            for piece in self.pieces:
+                if (isinstance(piece,King)) and (piece.color == map_turn[self.turn]):
+                    column = ord(piece.position[0])
+                    row = int(piece.position[1]) 
+
+                    enemy_pieces = [piecenem for piecenem in self.pieces if piece.color != piecenem.color]
+                    enemy_squares = set()
+
+                    for enemy in enemy_pieces:
+                        for square in enemy.can_move(self.pieces):
+                            enemy_squares.add(square)
+
+                    if piece.is_checked(self.pieces):
+                        return self.read_move(str(input("Please enter a valid move: ")))
+                    elif not(map_castle[piece.color] in self.castle):
+                        return self.read_move(str(input("Please enter a valid move: ")))
+                    elif piece.position != map_position[piece.color][0]:
+                        return self.read_move(str(input("Please enter a valid move: ")))
+                    
+                    rooks = [rook for rook in self.pieces if (isinstance(rook,Rook)) and (rook.position == map_position[piece.color][1])]
+
+                    if len(rooks) != 1:
+                        return self.read_move(str(input("Please enter a valid move: ")))
+                    
+                    for index in range(2):
+                        column += 1
+                        if (chr(column)+str(row) in enemy_squares):
+                            return self.read_move(str(input("Please enter a valid move: ")))
+                        
+                        checking_pieces = [pix for pix in self.pieces if (pix.color == piece.color) and (pix.position == (chr(column)+str(row)))]
+
+                        if len(checking_pieces) != 0:
+                            return self.read_move(str(input("Please enter a valid move: ")))
+                        
+                    piece.position = chr(column)+str(row)
+                    rooks[0].position = chr(column-1)+str(row)
+                    
+                    return
+        
+        elif move == "O-O-O":     
+            map_castle = {
+                True: "Q",
+                False: "q"
+            }
+            map_position = {
+                True: ("e1","a1"),
+                False: ("e8","a8")
+            }
+            for piece in self.pieces:
+                if (isinstance(piece,King)) and (piece.color == map_turn[self.turn]):
+                    column = ord(piece.position[0])
+                    row = int(piece.position[1]) 
+
+                    enemy_pieces = [piecenem for piecenem in self.pieces if piece.color != piecenem.color]
+                    enemy_squares = set()
+
+                    for enemy in enemy_pieces:
+                        for square in enemy.can_move(self.pieces):
+                            enemy_squares.add(square)
+
+                    if piece.is_checked(self.pieces):
+                        return self.read_move(str(input("Please enter a valid move: ")))
+                    elif not(map_castle[piece.color] in self.castle):
+                        return self.read_move(str(input("Please enter a valid move: ")))
+                    elif piece.position != map_position[piece.color][0]:
+                        return self.read_move(str(input("Please enter a valid move: ")))
+                    
+                    rooks = [rook for rook in self.pieces if (isinstance(rook,Rook)) and (rook.position == map_position[piece.color][1])]
+
+                    if len(rooks) != 1:
+                        return self.read_move(str(input("Please enter a valid move: ")))
+                    
+                    for index in range(3):
+                        column -= 1
+                        if (chr(column)+str(row) in enemy_squares) and index < 2:
+                            return self.read_move(str(input("Please enter a valid move: ")))
+                        
+                        checking_pieces = [pix for pix in self.pieces if (pix.color == piece.color) and (pix.position == (chr(column)+str(row)))]
+
+                        if len(checking_pieces) != 0:
+                            return self.read_move(str(input("Please enter a valid move: ")))
+                        
+                    piece.position = chr(column+1)+str(row)
+                    rooks[0].position = chr(column+2)+str(row)
+                    
+                    return       
+
         else:
-            actual_piece = map_pieces[move[0]]
+            actual_piece = map_pieces.get(move[0],0)
 
+        if actual_piece == 0:
+            return self.read_move(str(input("Please enter a valid move: ")))
 
-        col = 0
-        row = 0
-        for letter in self.fen:
-            if letter.isnumeric():
-                col += int(letter)
+        for piece in self.pieces:
+            if isinstance(piece, actual_piece):
+                if (square_to_move in piece.can_move(self.pieces)) and map_turn[self.turn] == piece.color:
+                    piece.position = square_to_move
+                    flag = 1
 
-        return square_to_move
+        if flag == 0:
+            print("Thats not a valid move")
+            return self.read_move(str(input("Please enter a valid move: ")))
+
+        if "x" in move: #This runs if the move is a capture
+            if move[0].islower():
+                actual_piece = Pawn
+            else:
+                actual_piece = map_pieces[move[0]]
+
+            for i in range(len(move)):
+                if move[i] == "x":
+                    move_dummy = move[i+1:i+3]
+                    self.pieces = [piece for piece in self.pieces if  not ((piece.position == move_dummy) and piece.color != map_turn[self.turn])]
+        
+        for piece in self.pieces:
+            if isinstance(piece, King) and (piece.color == map_turn[self.turn]):
+                enemy_pieces = [pieces for pieces in self.pieces if (pieces.color != piece.color)]
+                
+                if piece.is_checked(self.pieces):
+                    # Chessboard.create_pieces()
+
+                    # ally_pieces = [pieces for pieces in self.pieces if (pieces.color == piece.color)]
+
+                    # for ally in ally_pieces:
+                    #     for pos in ally.can
+                        
+
+                    return self.read_move(str(input("Please enter a valid move: ")))
+                
+        return
+
+    
+    def update_fen(self):
+        map_change = {"w":"b", "b":"w"}
+
+        self.turn=map_change[self.turn]
+
+        new_fen = ""
+        for row in range(7,-1,-1):
+            acum_squares = 0
+            for col in range(8):
+                actual_square = chr(int(97+col)) + str(row + 1)
+                for piece in self.pieces:
+                    if piece.position == actual_square:
+                        if acum_squares > 0:
+                            new_fen += str(acum_squares)
+                            acum_squares = 0
+                        new_fen += piece.get_rep()
+                        acum_squares = -1
+                acum_squares += 1
+
+                if col == 7 and acum_squares > 0:
+                    new_fen += str(acum_squares)
+
+            
+            if row >0:
+                new_fen += "/"
+
+        self.fen = new_fen
