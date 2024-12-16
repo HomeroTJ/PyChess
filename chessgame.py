@@ -1,3 +1,11 @@
+'''
+Welcome to this project of my own, a python library called (add a cool name here)
+the purpouse of this project is to develop a python library that can handle
+information of a chess game, also working as a game engine for a chess game.
+
+The future for this project is make a native way to handle chess data on python
+'''
+
 import os
 
 class Square():
@@ -11,7 +19,7 @@ class Pieces:
         self.color = color #True if the color is white, False if the color is black
 
     def get_rep(self):
-        """Returns the representation of the piece to build later the FEN strin"""
+        """Returns the representation of the piece to build later the FEN string"""
         ...
 
     def can_move(self, other_pieces):
@@ -33,7 +41,7 @@ class Pawn(Pieces):
         # MUST IMPLEMENT ENPASSANT
 
         #Depending on the color of the piece, we give a different value to the iteration value
-        #this is because we use a global coordinate sistem for the squares
+        #this is because we use a global coordinate system for the squares
 
         if self.color == True:
             move_iter = 1
@@ -575,17 +583,21 @@ class Chessboard():
             False: 2
         }
         
-        for i in range(0,len(move)):
-            if move[::-1][i].isnumeric():
-                square_to_move += move[::-1][i]
-            if move[::-1][i].islower():
-                square_to_move += move[::-1][i]
-                break 
+        # for i in range(0,len(move)):
+        #     if move[::-1][i].isnumeric():
+        #         square_to_move += move[::-1][i]
+        #     if move[::-1][i].islower():
+        #         square_to_move += move[::-1][i]
+        #         break 
 
-        square_to_move = square_to_move[::-1]
+        # square_to_move = square_to_move[::-1]
+        square_to_move = move[::-1][0:2][::-1]
 
         if move[0].islower():
             actual_piece = Pawn
+
+        ### The following piece of code make sure that the short castle is a valid move, it it is, it is done and updated
+
         elif move == "O-O":
             map_castle = {
                 True: "K",
@@ -595,6 +607,7 @@ class Chessboard():
                 True: ("e1","h1"),
                 False: ("e8","h8")
             }
+
             for piece in self.pieces:
                 if (isinstance(piece,King)) and (piece.color == map_turn[self.turn]):
                     column = ord(piece.position[0])
@@ -608,11 +621,11 @@ class Chessboard():
                             enemy_squares.add(square)
 
                     if piece.is_checked(self.pieces):
-                        return self.read_move(str(input("Please enter a valid move: ")))
+                        return self.read_move(str(input("Please enter a valid move, the king is checked: ")))
                     elif not(map_castle[piece.color] in self.castle):
-                        return self.read_move(str(input("Please enter a valid move: ")))
+                        return self.read_move(str(input("Please enter a valid move, castling is not available: ")))
                     elif piece.position != map_position[piece.color][0]:
-                        return self.read_move(str(input("Please enter a valid move: ")))
+                        return self.read_move(str(input("Please enter a valid move, king not on his place: ")))
                     
                     rooks = [rook for rook in self.pieces if (isinstance(rook,Rook)) and (rook.position == map_position[piece.color][1])]
 
@@ -633,7 +646,7 @@ class Chessboard():
                     rooks[0].position = chr(column-1)+str(row)
                     
                     return
-        
+        ### this piece of code checks if the long castle is a valid move and if it is, then it is done
         elif move == "O-O-O":     
             map_castle = {
                 True: "Q",
@@ -656,11 +669,11 @@ class Chessboard():
                             enemy_squares.add(square)
 
                     if piece.is_checked(self.pieces):
-                        return self.read_move(str(input("Please enter a valid move: ")))
+                        return self.read_move(str(input("Please enter a valid move, the king is checked: ")))
                     elif not(map_castle[piece.color] in self.castle):
-                        return self.read_move(str(input("Please enter a valid move: ")))
+                        return self.read_move(str(input("Please enter a valid move, castling is not available: ")))
                     elif piece.position != map_position[piece.color][0]:
-                        return self.read_move(str(input("Please enter a valid move: ")))
+                        return self.read_move(str(input("Please enter a valid move, king not on his place: ")))
                     
                     rooks = [rook for rook in self.pieces if (isinstance(rook,Rook)) and (rook.position == map_position[piece.color][1])]
 
@@ -682,23 +695,68 @@ class Chessboard():
                     
                     return       
 
+
+        ### This section of the code handles every othe move
+        ### first take 
         else:
             actual_piece = map_pieces.get(move[0],0)
 
-        if actual_piece == 0:
-            return self.read_move(str(input("Please enter a valid move: ")))
-
+        pieces_to_check = [] #Here we would store the pieces that can make the move that it read
+        piece_on_square = []
         for piece in self.pieces:
+            if piece.position == square_to_move:
+                piece_on_square.append(piece)
             if isinstance(piece, actual_piece):
                 if (square_to_move in piece.can_move(self.pieces)) and map_turn[self.turn] == piece.color:
+                    pieces_to_check.append(piece)
+        
+        if (len(piece_on_square)>0 and not('x' in move)):
+            return self.read_move(str(input('Captures must be indicated with an x. Please enter a valid move: ')))
+
+        if len(pieces_to_check) == 1:
+            map_position = {
+                True: ("a1","h1"),
+                False: ("a8","h8")
+            }
+            
+            if isinstance(pieces_to_check[0],Rook) and (pieces_to_check[0].position in map_position[pieces_to_check[0].color]):
+                
+                if pieces_to_check[0].position == 'a1' and ('Q' in self.castle):
+                    self.castle = self.castle.replace('Q', '')
+                if pieces_to_check[0].position == 'h1' and ('K' in self.castle):
+                    self.castle = self.castle.replace('K', '')
+                if pieces_to_check[0].position == 'a8' and ('Q' in self.castle):
+                    self.castle = self.castle.replace('q', '')
+                if pieces_to_check[0].position == 'h8' and ('K' in self.castle):
+                    self.castle = self.castle.replace('k', '')
+                
+
+            pieces_to_check[0].position = square_to_move
+            flag = 1
+            
+
+        ### This handles the case where two pieces can make the move
+        if len(pieces_to_check) > 1:
+            move_to_check = move[:-2]
+            for piece in pieces_to_check:
+                if (piece.position in move_to_check) or (piece.position[0] in move_to_check):
                     piece.position = square_to_move
                     flag = 1
-
+                    if isinstance(piece,Rook) and piece.position in map_position[piece.color]:
+                        if piece.position == 'a1' and 'Q' in self.castle:
+                            self.castle.replace('Q', '')
+                        if piece.position == 'h1' and 'K' in self.castle:
+                            self.castle.replace('K', '')
+                        if piece.position == 'a8' and 'Q' in self.castle:
+                            self.castle.replace('q', '')
+                        if piece.position == 'h8' and 'K' in self.castle:
+                            self.castle.replace('k', '')
+                
         if flag == 0:
             print("Thats not a valid move")
             return self.read_move(str(input("Please enter a valid move: ")))
 
-        if "x" in move: #This runs if the move is a capture
+        if "x" in move: #This runs if the move is a capture only eliminates the destination piece of where it is going
             if move[0].islower():
                 actual_piece = Pawn
             else:

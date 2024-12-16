@@ -6,9 +6,13 @@ def main() -> None:
     chessboard.print_board()
 
     while True:
-        chessboard.read_move(input("Ingrese un movimiento: "))
-        chessboard.update_fen()
-        chessboard.print_board()
+        try:
+            chessboard.read_move(input("Ingrese un movimiento: "))
+            chessboard.update_fen()
+            chessboard.print_board()
+        except:
+            break
+    
 
     # chessboard.read_move(("e4"))
     # chessboard.update_fen()
